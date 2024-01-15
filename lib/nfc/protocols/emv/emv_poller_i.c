@@ -322,9 +322,6 @@ EmvError emv_poller_select_ppse(EmvPoller* instance) {
 EmvError emv_poller_select_application(EmvPoller* instance) {
     EmvError error = EmvErrorNone;
 
-    //  DELETE IT???????????????????????????????????????????????????????????????????????????????????????
-    instance->data->emv_application.app_started = false;
-
     const uint8_t emv_select_header[] = {
         0x00,
         0xA4, // SELECT application
@@ -371,7 +368,6 @@ EmvError emv_poller_select_application(EmvPoller* instance) {
             break;
         }
 
-        instance->data->emv_application.app_started = true;
     } while(false);
 
     return error;
@@ -499,30 +495,6 @@ EmvError emv_poller_read_files(EmvPoller* instance) {
         }
         error = EmvErrorProtocol;
     }
-
-    return error;
-}
-
-EmvError emv_poller_read(EmvPoller* instance) {
-    furi_assert(instance);
-    EmvError error = EmvErrorNone;
-
-    memset(&instance->data->emv_application, 0, sizeof(EmvApplication));
-    do {
-        error = emv_poller_select_ppse(instance);
-        if(error != EmvErrorNone) break;
-
-        error = emv_poller_select_application(instance);
-        if(error != EmvErrorNone) break;
-
-        error = emv_poller_get_processing_options(instance);
-        if(error != EmvErrorNone) break;
-
-        if(instance->data->emv_application.pan_len == 0) {
-            error = emv_poller_read_files(instance);
-            if(error != EmvErrorNone) break;
-        }
-    } while(false);
 
     return error;
 }
