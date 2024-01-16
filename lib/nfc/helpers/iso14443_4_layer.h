@@ -1,6 +1,7 @@
 #pragma once
 
 #include <toolbox/bit_buffer.h>
+#include <nfc/protocols/iso14443_4a/iso14443_4a.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,7 +20,7 @@ void iso14443_4_layer_encode_block(
     const BitBuffer* input_data,
     BitBuffer* block_data);
 
-bool iso14443_4_layer_decode_block(
+Iso14443_4aError iso14443_4_layer_decode_block(
     Iso14443_4Layer* instance,
     BitBuffer* output_data,
     const BitBuffer* block_data);

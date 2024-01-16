@@ -62,6 +62,7 @@ Iso14443_4aError iso14443_4a_poller_send_block(
     Iso14443_4aError error = Iso14443_4aErrorNone;
 
     do {
+        bit_buffer_reset(instance->rx_buffer);
         Iso14443_3aError iso14443_3a_error = iso14443_3a_poller_send_standard_frame(
             instance->iso14443_3a_poller,
             instance->tx_buffer,
@@ -72,12 +73,17 @@ Iso14443_4aError iso14443_4a_poller_send_block(
             error = iso14443_4a_process_error(iso14443_3a_error);
             break;
 
-        } else if(!iso14443_4_layer_decode_block(
-                      instance->iso14443_4_layer, rx_buffer, instance->rx_buffer)) {
-            error = Iso14443_4aErrorProtocol;
+        } else {
+            error = iso14443_4_layer_decode_block(
+                instance->iso14443_4_layer, rx_buffer, instance->rx_buffer);
+            if(error == Iso14443_4aErrorSendCtrl) {
+                // Send response for Control message
+                bit_buffer_copy(instance->tx_buffer, rx_buffer);
+                continue;
+            }
             break;
         }
-    } while(false);
+    } while(true);
 
     return error;
 }
