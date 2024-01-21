@@ -146,33 +146,33 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
         } else {
             switch(tag) {
             case EMV_TAG_GPO_FMT1:
-                memcpy(app->afl.data, &buff[i + 2], tlen - 2);
-                app->afl.size = tlen - 2;
+                // skip AIP
+                i += 2;
+                tlen -= 2;
+                memcpy(app->afl.data, &buff[i], tlen);
+                app->afl.size = tlen;
                 success = true;
                 FURI_LOG_T(TAG, "found EMV_TAG_GPO_FMT1 %x: ", tag);
                 break;
             case EMV_TAG_RESP_BUF_SIZE:
                 //success = true;
                 FURI_LOG_T(TAG, "found EMV_TAG_RESP_BUF_SIZE %x: %d", tag, buff[i]);
+                // Need to request SFI again with this length value
                 break;
             case EMV_TAG_AID:
                 app->aid_len = tlen;
                 memcpy(app->aid, &buff[i], tlen);
                 success = true;
                 FURI_LOG_T(TAG, "found EMV_TAG_AID %x: ", tag);
-                for(size_t i = 0; i < tlen; i++) {
-                    FURI_LOG_RAW_T("%02X ", buff[i]);
+                for(size_t x = 0; x < tlen; x++) {
+                    FURI_LOG_RAW_T("%02X ", app->aid[x]);
                 }
                 FURI_LOG_RAW_T("\r\n");
                 break;
             case EMV_TAG_PRIORITY:
                 memcpy(&app->priority, &buff[i], tlen);
                 success = true;
-                FURI_LOG_T(TAG, "found EMV_TAG_APP_PRIORITY %x: ", tag);
-                for(size_t i = 0; i < tlen; i++) {
-                    FURI_LOG_RAW_T("%02X ", buff[i]);
-                }
-                FURI_LOG_RAW_T("\r\n");
+                FURI_LOG_T(TAG, "found EMV_TAG_APP_PRIORITY %x: %d", tag, app->priority);
                 break;
             case EMV_TAG_CARD_NAME:
                 memcpy(app->name, &buff[i], tlen);
@@ -193,7 +193,9 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
                 success = true;
                 FURI_LOG_T(TAG, "found EMV_TAG_AFL %x (len=%d)", tag, tlen);
                 break;
+            // Tracks data https://murdoch.is/papers/defcon20emvdecode.pdf
             case EMV_TAG_TRACK_1_EQUIV: {
+                // Contain PAN and expire date
                 char track_1_equiv[80];
                 memcpy(track_1_equiv, &buff[i], tlen);
                 track_1_equiv[tlen] = '\0';
@@ -201,8 +203,9 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
                 FURI_LOG_T(TAG, "found EMV_TAG_TRACK_1_EQUIV %x : %s", tag, track_1_equiv);
                 break;
             }
+            case EMV_TAG_TRACK_2_DATA:
             case EMV_TAG_TRACK_2_EQUIV: {
-                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2_EQUIV %x", tag);
+                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2 %x", tag);
                 // 0xD0 delimits PAN from expiry (YYMM)
                 for(int x = 1; x < tlen; x++) {
                     if(buff[i + x + 1] > 0xD0) {
@@ -228,7 +231,7 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
                     if(bottom == '?') break;
                 }
                 track_2_equiv[track_2_equiv_len] = '\0';
-                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2_EQUIV %x : %s", tag, track_2_equiv);
+                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2 %x : %s", tag, track_2_equiv);
                 success = true;
                 break;
             }
