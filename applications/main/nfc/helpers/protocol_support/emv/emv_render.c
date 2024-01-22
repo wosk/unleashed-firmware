@@ -17,10 +17,19 @@ void nfc_render_emv_data(const EmvData* data, FuriString* str) {
 
 void nfc_render_emv_pan(const uint8_t* data, const uint8_t len, FuriString* str) {
     if(len == 0) return;
+    FuriString* card_number = furi_string_alloc();
+
     for(uint8_t i = 0; i < len; i += 2) {
-        furi_string_cat_printf(str, "%02X%02X ", data[i], data[i + 1]);
+        furi_string_cat_printf(card_number, "%02X%02X ", data[i], data[i + 1]);
     }
+
+    // Cut padding 'F '
+    size_t end = furi_string_search_rchar(card_number, 'F');
+    if(end) furi_string_left(card_number, end);
+
+    furi_string_cat(str, card_number);
     furi_string_cat_printf(str, "\n");
+    furi_string_free(card_number);
 }
 
 void nfc_render_emv_expired(const EmvApplication* apl, FuriString* str) {
