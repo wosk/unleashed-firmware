@@ -152,18 +152,18 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
                 memcpy(app->afl.data, &buff[i], tlen);
                 app->afl.size = tlen;
                 success = true;
-                FURI_LOG_T(TAG, "found EMV_TAG_GPO_FMT1 %x: ", tag);
+                FURI_LOG_T(TAG, "found EMV_TAG_GPO_FMT1 %X: ", tag);
                 break;
             case EMV_TAG_RESP_BUF_SIZE:
                 //success = true;
-                FURI_LOG_T(TAG, "found EMV_TAG_RESP_BUF_SIZE %x: %d", tag, buff[i]);
+                FURI_LOG_T(TAG, "found EMV_TAG_RESP_BUF_SIZE %X: %d", tag, buff[i]);
                 // Need to request SFI again with this length value
                 break;
             case EMV_TAG_AID:
                 app->aid_len = tlen;
                 memcpy(app->aid, &buff[i], tlen);
                 success = true;
-                FURI_LOG_T(TAG, "found EMV_TAG_AID %x: ", tag);
+                FURI_LOG_T(TAG, "found EMV_TAG_AID %X: ", tag);
                 for(size_t x = 0; x < tlen; x++) {
                     FURI_LOG_RAW_T("%02X ", app->aid[x]);
                 }
@@ -172,7 +172,7 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
             case EMV_TAG_PRIORITY:
                 memcpy(&app->priority, &buff[i], tlen);
                 success = true;
-                FURI_LOG_T(TAG, "found EMV_TAG_APP_PRIORITY %x: %d", tag, app->priority);
+                FURI_LOG_T(TAG, "found EMV_TAG_APP_PRIORITY %X: %d", tag, app->priority);
                 break;
             case EMV_TAG_CARD_NAME:
                 memcpy(app->name, &buff[i], tlen);
@@ -205,7 +205,7 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
             }
             case EMV_TAG_TRACK_2_DATA:
             case EMV_TAG_TRACK_2_EQUIV: {
-                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2 %x", tag);
+                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2 %X", tag);
                 // 0xD0 delimits PAN from expiry (YYMM)
                 for(int x = 1; x < tlen; x++) {
                     if(buff[i + x + 1] > 0xD0) {
@@ -231,7 +231,7 @@ static bool emv_decode_response(const uint8_t* buff, uint16_t len, EmvApplicatio
                     if(bottom == '?') break;
                 }
                 track_2_equiv[track_2_equiv_len] = '\0';
-                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2 %x : %s", tag, track_2_equiv);
+                FURI_LOG_T(TAG, "found EMV_TAG_TRACK_2 %X : %s", tag, track_2_equiv);
                 success = true;
                 break;
             }
@@ -445,11 +445,11 @@ EmvError emv_poller_read_sfi_record(EmvPoller* instance, uint8_t sfi, uint8_t re
         Iso14443_4aError iso14443_4a_error = iso14443_4a_poller_send_block_pwt_ext(
             instance->iso14443_4a_poller, instance->tx_buffer, instance->rx_buffer);
 
-        furi_string_printf(text, "SFI 0x%x record %d:", sfi, record_num);
+        furi_string_printf(text, "SFI 0x%X record %d:", sfi, record_num);
         emv_trace(instance, furi_string_get_cstr(text));
 
         if(iso14443_4a_error != Iso14443_4aErrorNone) {
-            FURI_LOG_E(TAG, "Failed to read SFI 0x%x record %d", sfi, record_num);
+            FURI_LOG_E(TAG, "Failed to read SFI 0x%X record %d", sfi, record_num);
             error = emv_process_error(iso14443_4a_error);
             break;
         }
@@ -462,7 +462,7 @@ EmvError emv_poller_read_sfi_record(EmvPoller* instance, uint8_t sfi, uint8_t re
                &instance->data->emv_application)) {
             // It's ok while bruteforcing
             //error = EmvErrorProtocol;
-            FURI_LOG_T(TAG, "Failed to parse SFI 0x%x record %d", sfi, record_num);
+            FURI_LOG_T(TAG, "Failed to parse SFI 0x%X record %d", sfi, record_num);
         }
     } while(false);
 
