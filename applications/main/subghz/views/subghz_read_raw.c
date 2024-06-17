@@ -16,6 +16,9 @@ struct SubGhzReadRAW {
     void* context;
 };
 
+static FuriTimer* relearn_timer;
+static bool relearn_active;
+
 typedef struct {
     FuriString* frequency_str;
     FuriString* preset_str;
@@ -349,10 +352,12 @@ void subghz_read_raw_draw(Canvas* canvas, SubGhzReadRAWModel* model) {
     case SubGhzReadRAWStatusStart:
         elements_button_left(canvas, "Config");
         elements_button_center(canvas, "REC");
+
         break;
 
     default:
         elements_button_center(canvas, "Stop");
+        elements_button_right(canvas, "125kHz");
         break;
     }
 
@@ -366,6 +371,26 @@ void subghz_read_raw_draw(Canvas* canvas, SubGhzReadRAWModel* model) {
         canvas_draw_str(canvas, 128, 40, "RSSI");
         canvas_set_font_direction(canvas, CanvasDirectionLeftToRight);
     }
+}
+
+static void tpms_relearn_stop(void) {
+    if(relearn_active) {
+        relearn_active = false;
+        furi_timer_stop(relearn_timer);
+        furi_hal_rfid_tim_read_stop();
+    }
+}
+
+static void tpms_relearn_start(void) {
+    if(relearn_active) tpms_relearn_stop();
+    relearn_active = true;
+    furi_hal_rfid_tim_read_start(125000, 0.5);
+    furi_timer_start(relearn_timer, pdMS_TO_TICKS(3000));
+}
+
+static void tpms_view_receiver_relearn_timer_callback(void* unused) {
+    UNUSED(unused);
+    tpms_relearn_stop();
 }
 
 bool subghz_read_raw_input(InputEvent* event, void* context) {
@@ -493,6 +518,8 @@ bool subghz_read_raw_input(InputEvent* event, void* context) {
                     } else if(model->status == SubGhzReadRAWStatusLoadKeyIDLE) {
                         //More
                         instance->callback(SubGhzCustomEventViewReadRAWMore, instance->context);
+                    } else if(model->status == SubGhzReadRAWStatusREC) {
+                        tpms_relearn_start();
                     }
                 }
             },
@@ -634,6 +661,9 @@ SubGhzReadRAW* subghz_read_raw_alloc(bool raw_send_only) {
             model->raw_threshold_rssi = -127.0f;
         },
         true);
+
+    relearn_timer =
+        furi_timer_alloc(tpms_view_receiver_relearn_timer_callback, FuriTimerTypeOnce, NULL);
 
     return instance;
 }
