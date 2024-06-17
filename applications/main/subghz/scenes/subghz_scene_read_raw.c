@@ -73,6 +73,8 @@ void subghz_scene_read_raw_on_enter(void* context) {
     SubGhz* subghz = context;
     FuriString* file_name = furi_string_alloc();
 
+    if(subghz_threshold_rssi_get(subghz->threshold_rssi) == -90.0f)
+        subghz_threshold_rssi_set(subghz->threshold_rssi, -70.0f);
     float threshold_rssi = subghz_threshold_rssi_get(subghz->threshold_rssi);
     switch(subghz_rx_key_state_get(subghz)) {
     case SubGhzRxKeyStateBack:
